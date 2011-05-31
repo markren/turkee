@@ -6,18 +6,48 @@ require 'active_record'
 require 'action_view'
 require 'active_support'
 require 'action_controller'
+require 'mongoid'
 
 module Turkee
 
   # Model simply tracks what assignments have been imported
-  class TurkeeImportedAssignment < ActiveRecord::Base
-  end
+  class TurkeeImportedAssignment
+    include Mongoid::Document
+    include Mongoid::Timestamps
+    
+    field :assignment_id
 
-  class TurkeeTask < ActiveRecord::Base
+    index :assignment_id, :unique => true
+    
+    def self.find_by_assignment_id(assignment_id)
+      TurkeeImportedAssignment.where(:assignment_id => assignment_id).first
+    end
+
+  end
+     
+  class TurkeeTask
+    include Mongoid::Document
+    include Mongoid::Timestamps
+
+    field :hit_url
+    field :sandbox, :type => Boolean
+    field :task_type
+    field :hit_title
+    field :hit_description
+    field :hit_id
+    field :hit_reward, :type => Float
+    field :hit_num_assignments, :type => Integer
+    field :tih_lifetime, :type => Integer
+    field :form_url
+    field :complete, :type => Boolean, :default => false
+
+    index :complete
+    index :hit_id, :unique => true
+
     # belongs_to :task, :polymorphic => true
     HIT_FRAMEHEIGHT     = 1000
 
-    scope :unprocessed_hits, :conditions => ['complete = ?', false]
+    scope :unprocessed_hits, :where => { :complete => false }
 
     # Use this method to go out and retrieve the data for all of the posted Turk Tasks.
     #  Each specific TurkeeTask object (determined by task_type field) is in charge of
@@ -164,6 +194,10 @@ module Turkee
       url = (host + @app.send("new_#{typ.to_s.underscore}_path")) # Workaround for now. :(
       puts "form_url = #{url}"
       url
+    end
+    
+    def self.find_by_hit_id(hit_id)
+      TurkeeTask.where(:hit_id => hit_id).first
     end
 
   end
